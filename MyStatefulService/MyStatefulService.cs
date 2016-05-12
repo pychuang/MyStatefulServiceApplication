@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Fabric;
+using System.Fabric.Health;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -50,6 +51,11 @@ namespace MyStatefulService
                 using (var tx = this.StateManager.CreateTransaction())
                 {
                     var result = await myDictionary.TryGetValueAsync(tx, "Counter");
+                    if (!result.HasValue)
+                    {
+                        HealthInformation healthInformation = new HealthInformation("ServiceCode", "StateDictionary", HealthState.Error);
+                        this.Partition.ReportReplicaHealth(healthInformation);
+                    }
 
                     ServiceEventSource.Current.ServiceMessage(this, "Current Counter Value: {0}",
                         result.HasValue ? result.Value.ToString() : "Value does not exist.");
